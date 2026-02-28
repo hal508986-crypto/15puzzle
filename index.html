@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>15 Puzzle</title>
+    <style>
+        body {
+            /* スクロールやスワイプ操作を無効化し、パズル操作に専念させます */
+            touch-action: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #2c3e50;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        #puzzle-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            width: 90vw;
+            max-width: 400px;
+            aspect-ratio: 1; /* 盤面を常に正方形に保ちます */
+            background-color: #34495e;
+            padding: 8px;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .tile {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            font-size: 2rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s ease-in-out, background-color 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .tile:active {
+            transform: scale(0.95);
+            background-color: #bdc3c7;
+        }
+
+        .empty {
+            background-color: transparent;
+            box-shadow: none;
+            cursor: default;
+        }
+    </style>
+</head>
+<body>
+
+<div id="puzzle-board"></div>
+
+<script>
+    const board = document.getElementById('puzzle-board');
+    let tiles = [];
+    const size = 4;
+
+    // 初期化処理
+    function init() {
+        // 1から15までの数字と、空マスを表す0を配列に格納します
+        tiles = Array.from({length: size * size - 1}, (_, i) => i + 1);
+        tiles.push(0);
+        
+        shuffle();
+        render();
+    }
+
+    // パズルが必ず解ける状態を維持するため、完成形から逆算してランダムに移動させます
+    function shuffle() {
+        for (let i = 0; i < 1000; i++) {
+            const emptyIdx = tiles.indexOf(0);
+            const validMoves = getValidMoves(emptyIdx);
+            const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+            // 空マスと隣接するランダムなマスを入れ替えます
+            [tiles[emptyIdx], tiles[randomMove]] = [tiles[randomMove], tiles[emptyIdx]];
+        }
+    }
+
+    // 空マスに対して移動可能な（隣接する）マスのインデックスを取得します
+    function getValidMoves(emptyIdx) {
+        const moves = [];
+        const row = Math.floor(emptyIdx / size);
+        const col = emptyIdx % size;
+        
+        if (row > 0) moves.push(emptyIdx - size); // 上
+        if (row < size - 1) moves.push(emptyIdx + size); // 下
+        if (col > 0) moves.push(emptyIdx - 1); // 左
+        if (col < size - 1) moves.push(emptyIdx + 1); // 右
+        
+        return moves;
+    }
+
+    // 画面の描画処理
+    function render() {
+        board.innerHTML = '';
+        tiles.forEach((t, index) => {
+            const tileEl = document.createElement('div');
+            tileEl.className = 'tile' + (t === 0 ? ' empty' : '');
+            if (t !== 0) {
+                tileEl.textContent = t;
+            }
+            
+            // タップ（クリック）イベントの設定
+            tileEl.addEventListener('click', () => move(index));
+            board.appendChild(tileEl);
+        });
+        
+        // 描画後にクリア判定を行います（UIの更新を待つために僅かに遅延させます）
+        setTimeout(checkWin, 50);
+    }
+
+    // タイルの移動処理
+    function move(index) {
+        const emptyIdx = tiles.indexOf(0);
+        // タップされたタイルが空マスと隣接している場合のみ入れ替えます
+        if (getValidMoves(emptyIdx).includes(index)) {
+            [tiles[index], tiles[emptyIdx]] = [tiles[emptyIdx], tiles[index]];
+            render();
+        }
+    }
+
+    // クリア判定処理
+    function checkWin() {
+        // 最後の要素以外が1〜15の昇順になっており、かつ最後が0であればクリアです
+        const isWin = tiles.slice(0, -1).every((t, i) => t === i + 1) && tiles[15] === 0;
+        if (isWin) {
+            alert('見事です、ボス。パズルクリアです。');
+            // クリア後、再度シャッフルして初期化します
+            init();
+        }
+    }
+
+    // アプリケーションの起動
+    init();
+</script>
+
+</body>
+</html>
